@@ -20,4 +20,4 @@
 [[TTDNS shared] ipByDomain:@"baidu.com"]
 
 ```
-![部分思路说明](https://zhuanlan.zhihu.com/p/456131131)
+[部分思路说明](https://zhuanlan.zhihu.com/p/456131131)
