@@ -7,13 +7,17 @@
 ```
 [[TTDNS shared] addWhiteListDomains:@[
         @"baidu.com",
-    ]]
+]]
 ```
 
 默认不可用，需要手动开启
-```[TTDNS shared].enable = YES;```
+```
+[TTDNS shared].enable = YES;
+```
 
 获取域名缓存
 ```
 [[TTDNS shared] ipByDomain:@"baidu.com"]
+
 ```
+![部分思路说明](https://zhuanlan.zhihu.com/p/456131131)
