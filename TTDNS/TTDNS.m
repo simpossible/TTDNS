@@ -218,33 +218,6 @@
     return nil;
 }
 
-/// 通过一个数组生成一个ip array[0] = ipv4 array[1] = ipv6
-- (TTDNSIp *)generateIpWithArray:(NSArray *)ipsArray domain:(NSString*)domain isRefresh:(BOOL *)refresh {
-    if (ipsArray && ipsArray.count > 1 && domain.length >0) {
-        NSString *ipv4 = ipsArray[0];
-        NSString *ipv6 = ipsArray[1];
-        ipv4 = [ipv4 isEqualToString:@"0"]?@"":ipv4;
-        ipv6 = [ipv6 isEqualToString:@"0"]?@"":ipv6;
-        if (ipv4.length > 0 || ipv6.length > 0) {
-            TTDNSIp *existIp = [self.ipParseCache objectForKey:domain];
-            *refresh = YES; // 是否更新了
-            if (existIp) {
-                if ([ipv4 isEqualToString:existIp.ipv4] && [ipv6 isEqualToString:existIp.ipv6]) {
-                    *refresh = NO;
-                }else {
-                    [existIp updateIpv4:ipv4 andIpv6:ipv6];
-                }
-            }else {
-                existIp = [[TTDNSIp alloc] initWithIpv4:ipv4 ipv6:ipv6 domain:domain];
-            }
-            [self.ipParseCache setObject:existIp forKey:domain];
-            return existIp;
-        }
-    }
-    return nil;
-}
-
-
 - (void)reloadIpForDomain:(NSString *)domain {
     if ([self.domainReqTimes objectForKey:domain]) {
         return;;
