@@ -24,5 +24,7 @@
 
 
 - (NSString *)validIpHost;
+
+- (void)syncFromIp:(TTDNSIp *)ip;
 @end
 

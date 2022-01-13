@@ -14,19 +14,34 @@ PODS:
   - AFNetworking/Serialization (4.0.1)
   - AFNetworking/UIKit (4.0.1):
     - AFNetworking/NSURLSession
+  - AlicloudHTTPDNS (1.19.2.8):
+    - AlicloudUT
+    - AlicloudUtils
+  - AlicloudUT (5.2.0.16):
+    - AlicloudUTDID
+  - AlicloudUTDID (1.5.0.94)
+  - AlicloudUtils (1.3.9):
+    - AlicloudUTDID
   - Masonry (1.1.0)
   - MSDKDns_C11 (1.3.0)
   - TTDNS (0.0.1):
     - AFNetworking
+    - AlicloudHTTPDNS
     - MSDKDns_C11
 
 DEPENDENCIES:
+  - AlicloudHTTPDNS (~> 1.19.2.4)
   - Masonry
   - MSDKDns_C11
   - TTDNS (from `./`)
 
 SPEC REPOS:
-  trunk:
+  https://github.com/aliyun/aliyun-specs.git:
+    - AlicloudHTTPDNS
+    - AlicloudUT
+    - AlicloudUTDID
+    - AlicloudUtils
+  https://github.com/CocoaPods/Specs.git:
     - AFNetworking
     - Masonry
     - MSDKDns_C11
@@ -37,10 +52,14 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   AFNetworking: 7864c38297c79aaca1500c33288e429c3451fdce
+  AlicloudHTTPDNS: e0daea78ca182e3faf3f7cac0624c55d7d89ef0b
+  AlicloudUT: 6d1cf30d57d096b7e9bb4b069dd0ba6ad59a3338
+  AlicloudUTDID: 7323c443dcdf9a73e2224dc6ce51703671d7a765
+  AlicloudUtils: 66e0ba6ece62d7dd05e9dd95674b2c7811624c2f
   Masonry: 678fab65091a9290e40e2832a55e7ab731aad201
   MSDKDns_C11: 93ef1b74cf2b413b51d01210e739f1f67f2e491c
-  TTDNS: 457a7c1550907d10f113dcd44a4ad20da1d3dd1f
+  TTDNS: 0bd6c29848d815a7f11e6694261609ca7a9ce6d7
 
-PODFILE CHECKSUM: 5753b2ed5a4b0f079b87aa4ac83ba8e9cd98bdeb
+PODFILE CHECKSUM: 666c0af44d755d416ebeba1f6d5c2dec80153803
 
 COCOAPODS: 1.11.2

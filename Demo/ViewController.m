@@ -8,11 +8,13 @@
 #import "ViewController.h"
 #import <TTDNS/TTDNS.h>
 #import <MSDKDns_C11/MSDKDns.h>
+#import <AlicloudHttpDNS/AlicloudHttpDNS.h>
+@import TTDNS;
 @import Masonry;
 //#import <BeaconAPI_Base/BeaconBaseInterface.h>
 
 
-@interface ViewController ()
+@interface ViewController ()<HttpdnsLoggerProtocol>
 
 @property (nonatomic, strong) UIButton * requestButton;
 
@@ -27,7 +29,7 @@
     // Do any additional setup after loading the view.
     
     [self initialUI];
-    [self initalConfig];
+    [self initalAliConfig];
 }
 
 - (void)initialUI {
@@ -60,28 +62,52 @@
     
 }
 
-- (void)initalConfig {
-    
+
+- (void)initialTencentConfig {
     /// 这里是腾讯云的配置
-//    [BeaconBaseInterface setAppKey:@"0IOS0G91FP4YBZZD"];
-//    [BeaconBaseInterface enableAnalytics:@"" gatewayIP:nil];
-    
     DnsConfig config ;
-    config.appId = @"AppID";
-    config.dnsIp = @"DNS_IP";
-    config.dnsId = 00000;
-    config.dnsKey = @"DESKEY";//des的密钥
-    config.encryptType = HttpDnsEncryptTypeDES;
-    config.debug = YES;
-    config.timeout = 5000;
+    [self configTestLab:&config];
     [[MSDKDns sharedInstance] initConfig: &config];
-    
+        
+    [[TTDNS shared] setDNSLoader:[[TTDNSTencentLoader alloc] init]];
     [[TTDNS shared] addWhiteListDomains:@[
         @"baidu.com",
     ]];
     
     [TTDNS shared].enable = YES;
 }
+
+- (void)initalAliConfig {
+    
+    /// 这里是腾讯云的配置
+    DnsConfig config ;
+    [self configTestLab:&config];
+    [[MSDKDns sharedInstance] initConfig: &config];
+    
+
+    HttpDnsService *service = [[HttpDnsService alloc] initWithAccountID:1111 secretKey:@"qweqwqw"];
+    [service enableIPv6:YES];
+    [service setLogHandler:self];
+        
+    [[TTDNS shared] setDNSLoader:[[TTDNSAliLoader alloc] initWithService:service]];
+    [[TTDNS shared] addWhiteListDomains:@[
+        @"baidu.com",
+    ]];
+    
+    [TTDNS shared].enable = YES;
+}
+
+/// 配置正式环境
+- (void)configTestLab:(DnsConfig *)config {
+    (*config).appId = @"xxxx";
+    (*config).dnsIp = @"1.1.1.1";
+    (*config).dnsId = 12345;
+    (*config).dnsKey = @"deskey";//des的密钥
+    (*config).encryptType = HttpDnsEncryptTypeDES;
+//    (*config).debug = YES;
+    (*config).timeout = 5000;
+}
+
 
 - (void)testRequest {
     NSURL *url = [NSURL URLWithString:@"https://www.baidu.com"];
@@ -97,8 +123,16 @@
 }
 
 - (void)log :(NSString *)text {
-    NSString *string = [NSString stringWithFormat:@"%@ \n %@",text,self.stringlabel.text?:@""];
-    self.stringlabel.text = string;
+    if ([[NSThread currentThread] isMainThread]) {
+        NSString *string = [NSString stringWithFormat:@"%@ \n %@",text,self.stringlabel.text?:@""];
+        self.stringlabel.text = string;
+    }else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSString *string = [NSString stringWithFormat:@"%@ \n %@",text,self.stringlabel.text?:@""];
+            self.stringlabel.text = string;
+        });
+    }
 }
+
 
 @end
