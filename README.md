@@ -70,6 +70,7 @@ HttpDnsService *service = [[HttpDnsService alloc] initWithAccountID:1111 secretK
 ```
 @interface TTDNSLoader : NSObject
 
+/// 不用实现
 - (void)preLoadDNS:(NSArray<NSString *> *)hosts;
 
 /// 同步的方式请求一个域名的解析
