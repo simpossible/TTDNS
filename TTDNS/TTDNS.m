@@ -31,66 +31,7 @@
 
 @property (nonatomic, strong) NSMutableDictionary * domainReqTimes;
 
-@property (nonatomic, strong) NSMutableDictionary * hookedRecord;
-
 @end
-
-@interface AddrInfoReply : NSObject
-@property (nonatomic) DNSServiceGetAddrInfoReply callBack;
-@end
-
-@implementation AddrInfoReply
-@end
-
-
-static void my_callBack(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *hostname, const struct sockaddr *address, uint32_t ttl, void *context) {
-    if (context) {
-        NSString * host = [NSString stringWithUTF8String:hostname];
-        id con = (__bridge id)(context);
-        AddrInfoReply *reply = objc_getAssociatedObject(con, "AddrInfoReply");
-        if (reply.callBack) {
-            if (errorCode == kDNSServiceErr_NoError && address->sa_family == AF_INET) {
-                if (address->sa_data[2] != 0
-                    || address->sa_data[3] != 0
-                    || address->sa_data[4] != 0
-                    || address->sa_data[5] != 0) {
-                    TTDNSIp *ip = [[TTDNS shared] getIpByDomain:host];
-                    unsigned char * ipv4s = [ip ipv4Parts];
-                    if (ipv4s) {
-                        struct sockaddr *newAddress = (struct sockaddr *)address;
-                        newAddress->sa_data[2] = ipv4s[0];
-                        newAddress->sa_data[3] = ipv4s[1];
-                        newAddress->sa_data[4] = ipv4s[2];
-                        newAddress->sa_data[5] = ipv4s[3];
-                        ((DNSServiceGetAddrInfoReply)(reply.callBack))(sdRef, flags, interfaceIndex, errorCode, hostname, newAddress, ttl, context);
-                        free(ipv4s);
-                        return;
-                    }
-                }
-            }
-            ((DNSServiceGetAddrInfoReply)(reply.callBack))(sdRef, flags, interfaceIndex, errorCode, hostname, address, ttl, context);
-        } else {
-            fprintf(stderr, "ERROR: my_callBack no callBack\n");
-        }
-    } else {
-        fprintf(stderr, "ERROR: my_callBack no context\n");
-    }
-}
-
-
-DNSServiceErrorType (*origin_DNSServiceGetAddrInfo)(DNSServiceRef *sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceProtocol protocol, const char *hostname, DNSServiceGetAddrInfoReply callBack, void *context);
-
-DNSServiceErrorType (my_DNSServiceGetAddrInfo)(DNSServiceRef *sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceProtocol protocol, const char *hostname, DNSServiceGetAddrInfoReply callBack, void *context) {
-    NSString *host = [[NSString alloc] initWithUTF8String:hostname];
-    if ([[TTDNS shared] isDomainInWhiteList:host] && context) {
-        id con = (__bridge id)(context);
-        AddrInfoReply *reply = [[AddrInfoReply alloc] init];
-        reply.callBack =  callBack;
-        objc_setAssociatedObject(con, "AddrInfoReply", reply, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        return origin_DNSServiceGetAddrInfo(sdRef, flags, interfaceIndex, protocol, hostname, my_callBack, context);
-    }
-    return origin_DNSServiceGetAddrInfo(sdRef, flags, interfaceIndex, protocol, hostname, callBack, context);
-}
 
 @implementation TTDNS
 
@@ -116,7 +57,6 @@ DNSServiceErrorType (my_DNSServiceGetAddrInfo)(DNSServiceRef *sdRef, DNSServiceF
         self.ipParseCache = [NSMutableDictionary dictionary];
         self.ioQueue = dispatch_queue_create("msgDeal", DISPATCH_QUEUE_SERIAL);
         self.domainReqTimes = [NSMutableDictionary dictionary];
-        self.hookedRecord = [NSMutableDictionary dictionary];
         [self loadLocalCache];
     }
     return self;
@@ -198,9 +138,7 @@ DNSServiceErrorType (my_DNSServiceGetAddrInfo)(DNSServiceRef *sdRef, DNSServiceF
 - (TTDNSIp *)ipByDomain:(NSString *)domain {
     if (domain.length > 0) {
         TTDNSIp *ip = [self.ipParseCache objectForKey:domain];
-        if (!ip) {
-            [self reloadIpForDomain:domain];
-        }
+        [self reloadIpForDomain:domain];
         return ip;
 
     }
@@ -212,13 +150,16 @@ DNSServiceErrorType (my_DNSServiceGetAddrInfo)(DNSServiceRef *sdRef, DNSServiceF
     if (domain) {
         // 单个域名查询
         NSArray *ipsArray = [[MSDKDns sharedInstance] WGGetHostByName: domain];
-        TTDNSIp *ip = [self generateIpWithArray:ipsArray domain:domain];
+        BOOL refresh;
+        TTDNSIp *ip = [self generateIpWithArray:ipsArray domain:domain isRefresh:&refresh];
         if (!ip) {
             if (domain.length > 0) {
                 [self reloadIpForDomain:domain];
             }
         }else{
-            [self saveDns];
+            if (refresh) {
+                [self saveDns];
+            }
         }
         return ip;
         
@@ -227,7 +168,7 @@ DNSServiceErrorType (my_DNSServiceGetAddrInfo)(DNSServiceRef *sdRef, DNSServiceF
 }
 
 /// 通过一个数组生成一个ip array[0] = ipv4 array[1] = ipv6
-- (TTDNSIp *)generateIpWithArray:(NSArray *)ipsArray domain:(NSString*)domain {
+- (TTDNSIp *)generateIpWithArray:(NSArray *)ipsArray domain:(NSString*)domain isRefresh:(BOOL *)refresh {
     if (ipsArray && ipsArray.count > 1 && domain.length >0) {
         NSString *ipv4 = ipsArray[0];
         NSString *ipv6 = ipsArray[1];
@@ -235,8 +176,13 @@ DNSServiceErrorType (my_DNSServiceGetAddrInfo)(DNSServiceRef *sdRef, DNSServiceF
         ipv6 = [ipv6 isEqualToString:@"0"]?@"":ipv6;
         if (ipv4.length > 0 || ipv6.length > 0) {
             TTDNSIp *existIp = [self.ipParseCache objectForKey:domain];
+            *refresh = YES; // 是否更新了
             if (existIp) {
-                [existIp updateIpv4:ipv4 andIpv6:ipv6];
+                if ([ipv4 isEqualToString:existIp.ipv4] && [ipv6 isEqualToString:existIp.ipv6]) {
+                    *refresh = NO;
+                }else {
+                    [existIp updateIpv4:ipv4 andIpv6:ipv6];
+                }
             }else {
                 existIp = [[TTDNSIp alloc] initWithIpv4:ipv4 ipv6:ipv6 domain:domain];
             }
@@ -261,24 +207,39 @@ DNSServiceErrorType (my_DNSServiceGetAddrInfo)(DNSServiceRef *sdRef, DNSServiceF
 
 - (void)getIpForDomain:(NSString *)domain async:(void (^)(TTDNSIp * ip))handler {
     [[MSDKDns sharedInstance] WGGetHostByNameAsync:domain returnIps:^(NSArray *ipsArray) {
-        handler?handler([self generateIpWithArray:ipsArray domain:domain]):nil;
-        [self saveDns];
+        [self log:@"TTNDS" message:@"domain:%@ getIpForDomain:%@",domain,ipsArray];
+        BOOL refresh;
+        TTDNSIp *ip = [self generateIpWithArray:ipsArray domain:domain isRefresh:&refresh];
+        if (handler) {
+            handler(ip);
+        }
+        if (refresh) {
+            [self saveDns];
+        }
     }];
 }
 
 /// 批量获取域名ip
 - (void)getIpForDomains:(NSArray<NSString *> *)domains async:(void (^)(NSArray<TTDNSIp *> * ip))handler {
-    [[MSDKDns sharedInstance] WGGetHostsByNamesAsync:domains returnIps:^(NSDictionary *ipsDictionary) {
+    [[MSDKDns sharedInstance] WGGetHostsByNamesAsync:domains returnIps:^(NSDictionary *ipsDictionary) {        
+        [self log:@"TTNDS" message:@"domains :%@ getIpForDomains:%@", domains,ipsDictionary];
         NSMutableArray *array = [NSMutableArray array];
+        BOOL needRefresh = NO;
         for (NSString*key in ipsDictionary.allKeys) {
             NSArray *ipsArray = ipsDictionary[key];
-            TTDNSIp *ip = [self generateIpWithArray:ipsArray domain:key];
+            BOOL refresh;
+            TTDNSIp *ip = [self generateIpWithArray:ipsArray domain:key isRefresh:&refresh];
+            if (!needRefresh) {
+                needRefresh = refresh;
+            }
             if (ip) {
                 [array addObject:ip];
             }
         }
         handler?handler(array):nil;
-        [self saveDns];
+        if (needRefresh) {
+            [self saveDns];
+        }
     }];
 }
 
@@ -291,7 +252,7 @@ DNSServiceErrorType (my_DNSServiceGetAddrInfo)(DNSServiceRef *sdRef, DNSServiceF
         NSURLComponents *url = [[NSURLComponents alloc] initWithString:originString];
         NSString *host = [url host];
         if (host && [self.whiteListsDic containsObject:host] && self.enable) {
-            TTDNSIp *ip = [self.ipParseCache objectForKey:host];
+            TTDNSIp *ip = [self ipByDomain:host];
             if (ip) {
                 NSString *validIpHost = [ip validIpHost];
                 if (validIpHost) {
@@ -314,30 +275,17 @@ DNSServiceErrorType (my_DNSServiceGetAddrInfo)(DNSServiceRef *sdRef, DNSServiceF
     
 }
 
-#pragma mark - 钩子支持
+#pragma mark - 日志
 
-- (BOOL)isClassHookedForSessionDns:(Class)cls  {
-    NSString *clsString =  NSStringFromClass(cls);
-    NSString *key = [NSString stringWithFormat:@"[%@]_[session]",clsString];
-    return self.hookedRecord[key];
-}
-
-- (void)setSessionHooked:(Class)cls {
-    NSString *clsString =  NSStringFromClass(cls);
-    NSString *key = [NSString stringWithFormat:@"[%@]_[session]",clsString];
-    self.hookedRecord[key] = @(YES);
-}
-
-- (BOOL)isClassHookedForConnDns:(Class)cls  {
-    NSString *clsString =  NSStringFromClass(cls);
-    NSString *key = [NSString stringWithFormat:@"[%@]_[conn]",clsString];
-    return self.hookedRecord[key];
-}
-
-- (void)setConnHooked:(Class)cls {
-    NSString *clsString =  NSStringFromClass(cls);
-    NSString *key = [NSString stringWithFormat:@"[%@]_[conn]",clsString];
-    self.hookedRecord[key] = @(YES);
+- (void)log:(NSString * _Nullable )tag message:(NSString * _Nullable)format, ...NS_FORMAT_FUNCTION(2, 3) {
+    va_list args;
+    va_start(args, format);
+    if (self.logdelegate && [self.logdelegate respondsToSelector:@selector(log:message:)]) {
+        [self.logdelegate log:tag message:[NSString stringWithFormat:format,args]];
+    }else {
+        NSLog(@"[%@]:[%@]",tag,[NSString stringWithFormat:format,args]);
+    }
+    va_end(args);
 }
 
 

@@ -19,12 +19,17 @@ static char ttdns_url;
         Method fromMethod = class_getClassMethod(self, @selector(URLWithString:));
         Method toMethod = class_getClassMethod(self, @selector(TTDNS_URLWithString:));
         method_exchangeImplementations(toMethod, fromMethod);
+        
+        fromMethod = class_getInstanceMethod(self, @selector(initWithString:));
+        toMethod = class_getInstanceMethod(self, @selector(TTDNSinitWithString:));
+        method_exchangeImplementations(toMethod, fromMethod);
     });
 }
-+ (instancetype)TTDNS_URLWithString:(NSString *)URLString {
+
+- (instancetype)TTDNS_initWithString:(NSString *)URLString {
     TTDNSIp *ip  = nil;
     URLString = [[TTDNS shared] urlStringWith:URLString dnsIP:&ip];
-    NSURL *url = [self TTDNS_URLWithString:URLString];
+    NSURL *url = [self TTDNS_initWithString:URLString];
     url.dnsIp = ip;
     return url;
 }
@@ -37,6 +42,12 @@ static char ttdns_url;
     return objc_getAssociatedObject(self, &ttdns_url);
 }
 
-
++ (instancetype)TTDNS_URLWithString:(NSString *)URLString {
+    TTDNSIp *ip  = nil;
+    URLString = [[TTDNS shared] urlStringWith:URLString dnsIP:&ip];
+    NSURL *url = [self TTDNS_URLWithString:URLString];
+    url.dnsIp = ip;
+    return url;
+}
 
 @end

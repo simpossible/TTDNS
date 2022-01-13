@@ -12,9 +12,19 @@
  * 使用 NSURL 会自动将 urlstring 替换为ip解析后的结果
  *  使用 NSMutableURLRequest 如果触发了替换 那么会自动添加host字段
  */
+
+@protocol TTDNSLogProtocol <NSObject>
+
+@required
+- (void)log:(NSString * _Nullable )tag message:(NSString * _Nullable)message;
+
+@end
+
 @interface TTDNS : NSObject
 
 + (instancetype __nonnull )shared;
+
+@property (nonatomic, weak) id<TTDNSLogProtocol>_Nullable  logdelegate;
 
 /// 是否可用
 @property (nonatomic, assign) BOOL  enable;
