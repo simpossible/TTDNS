@@ -10,7 +10,7 @@
 
 @interface TTDNSLoader : NSObject
 
-- (void)preLoadDNS:(NSArray<NSString *> *)hosts;
+- (void)preLoadDNS:(NSArray<NSString *> *_Nullable)hosts;
 
 /// 同步的方式请求一个域名的解析
 - (TTDNSIp *_Nullable)getIpByDomain:(NSString * _Nullable)domain;
