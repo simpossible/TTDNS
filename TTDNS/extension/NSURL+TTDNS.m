@@ -21,7 +21,7 @@ static char ttdns_url;
         method_exchangeImplementations(toMethod, fromMethod);
         
         fromMethod = class_getInstanceMethod(self, @selector(initWithString:));
-        toMethod = class_getInstanceMethod(self, @selector(TTDNSinitWithString:));
+        toMethod = class_getInstanceMethod(self, @selector(TTDNS_initWithString:));
         method_exchangeImplementations(toMethod, fromMethod);
     });
 }

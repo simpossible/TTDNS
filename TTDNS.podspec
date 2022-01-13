@@ -22,7 +22,7 @@ Pod::Spec.new do |spec|
   spec.swift_version = '5.0'
   spec.ios.deployment_target = "9.0"
   
-  spec.source       = { :git => "git@github.com:simpossible/TTDNS.git", :tag => "#{spec.version}" }
+  spec.source       = { :git => "https://github.com/simpossible/TTDNS.git", :tag => "#{spec.version}" }
   
   spec.static_framework = true
   spec.source_files  = "TTDNS", "TTDNS/**/*.{h,m,swift}"
@@ -35,6 +35,10 @@ Pod::Spec.new do |spec|
   # spec.user_target_xcconfig = { 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'arm64' }
   # spec.pod_target_xcconfig = { 'VALID_ARCHS' => 'x86_64 armv7 arm64' }
 
+  spec.subspec "Base" do |ss|
+     ss.source_files  = "TTDNS", "TTDNS/**/*.{h,m,swift}"
+    ss.public_header_files = "TTDNS/**/*.{h}"
+  end
   
   
   # spec.dependency "Log"
@@ -44,6 +48,7 @@ Pod::Spec.new do |spec|
     ss.dependency "MSDKDns_C11"
     ss.source_files  = "LoaderAdaptor/tencent/**/*.{h,m,swift}"
     ss.public_header_files = "LoaderAdaptor/tencent/**/*.{h}"
+    ss.dependency "TTDNS/Base"
   end
 
   # spec.subspec "AliLoader" do |ss|
