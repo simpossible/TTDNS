@@ -181,17 +181,39 @@
 /// 同步 通过网络请求 获取域名解析
 - (TTDNSIp *)getIpByDomain:(NSString *)domain {
     if (domain) {
-        // 单个域名查询
-        TTDNSIp *existIp = [self.ipParseCache objectForKey:domain];
-        TTDNSIp *ip = [self.currentDNSLoader getIpByDomain:domain];
-        if (ip) {
-            if (existIp) {
-                [existIp syncFromIp:ip];
-            }else {
-                self.ipParseCache[domain] = ip;
+        if ([[NSThread currentThread] isMainThread]) {
+            // 单个域名查询
+            TTDNSIp *existIp = [self.ipParseCache objectForKey:domain];
+            TTDNSIp *ip = [self.currentDNSLoader getIpByDomain:domain];
+            if (ip) {
+                if (existIp) {
+                    if (![existIp isEqual:ip]) {
+                        [existIp syncFromIp:ip];
+                        [self saveDns];
+                    }
+                }else {
+                    self.ipParseCache[domain] = ip;
+                }
             }
+            return ip;
+        }else {
+            TTDNSIp *ip = [self.currentDNSLoader getIpByDomain:domain];
+            dispatch_sync(dispatch_get_main_queue(), ^{
+                TTDNSIp *existIp = [self.ipParseCache objectForKey:domain];
+                if (ip) {
+                    if (existIp) {
+                        if (![existIp isEqual:ip]) {
+                            [existIp syncFromIp:ip];
+                            [self saveDns];
+                        }
+                    }else {
+                        self.ipParseCache[domain] = ip;
+                    }
+                }
+            });
+            return ip;
         }
-        return ip;
+        
     }
     return nil;
 }
