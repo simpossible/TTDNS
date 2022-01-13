@@ -243,6 +243,10 @@
 
 /// 批量获取域名ip
 - (void)getIpForDomains:(NSArray<NSString *> *)domains async:(void (^)(NSArray<TTDNSIp *> * ip))handler {
+    if (domains.count == 0) {
+        handler?handler(@[]):nil;
+        return;
+    }
     [[MSDKDns sharedInstance] WGGetHostsByNamesAsync:domains returnIps:^(NSDictionary *ipsDictionary) {        
         [self log:@"TTNDS" message:@"domains :%@ getIpForDomains:%@", domains,ipsDictionary];
         NSMutableArray *array = [NSMutableArray array];
