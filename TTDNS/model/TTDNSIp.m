@@ -59,6 +59,15 @@
     self.ipv6 = ipv6;
 }
 
+- (void)syncFromIp:(TTDNSIp *)ip {
+    self.ipv4 = ip.ipv4;
+    self.ipv6 = ip.ipv6;
+}
+
+- (BOOL)isEqual:(TTDNSIp *)object {
+    return [self.ipv6 isEqualToString:object.ipv6] && [self.ipv4 isEqualToString:object.ipv4];
+}
+
 
 #pragma mark - NSCoding
 - (void)encodeWithCoder:(NSCoder *)aCoder {

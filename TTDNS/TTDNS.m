@@ -13,7 +13,8 @@
 #include <netdb.h>
 #include <dns_sd.h>
 #import <objc/runtime.h>
-#import <MSDKDns_C11/MSDKDns.h>
+
+
 @import AFNetworking;
 
 @interface TTDNSIp();
@@ -35,6 +36,8 @@
 @property (nonatomic, assign) BOOL  isLocalCacheLoaded;
 
 @property (nonatomic, copy) NSString * rootDir;
+
+@property (nonatomic, strong) TTDNSLoader * currentDNSLoader;
 
 @end
 
@@ -65,6 +68,14 @@
         self.cacheRootDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0];
     }
     return self;
+}
+
+- (void)setDNSLoader:(TTDNSLoader * _Nonnull)loader {
+    if (loader) {
+        self.currentDNSLoader = loader;
+    }else {
+        [self log:@"TTDNS" message:@"unexpect get nil dnsloader"];
+    }
 }
 
 - (void)setEnable:(BOOL)enable {
@@ -171,20 +182,16 @@
 - (TTDNSIp *)getIpByDomain:(NSString *)domain {
     if (domain) {
         // 单个域名查询
-        NSArray *ipsArray = [[MSDKDns sharedInstance] WGGetHostByName: domain];
-        BOOL refresh;
-        TTDNSIp *ip = [self generateIpWithArray:ipsArray domain:domain isRefresh:&refresh];
-        if (!ip) {
-            if (domain.length > 0) {
-                [self reloadIpForDomain:domain];
-            }
-        }else{
-            if (refresh) {
-                [self saveDns];
+        TTDNSIp *existIp = [self.ipParseCache objectForKey:domain];
+        TTDNSIp *ip = [self.currentDNSLoader getIpByDomain:domain];
+        if (ip) {
+            if (existIp) {
+                [existIp syncFromIp:ip];
+            }else {
+                self.ipParseCache[domain] = ip;
             }
         }
         return ip;
-        
     }
     return nil;
 }
@@ -228,17 +235,32 @@
 
 
 - (void)getIpForDomain:(NSString *)domain async:(void (^)(TTDNSIp * ip))handler {
-    [[MSDKDns sharedInstance] WGGetHostByNameAsync:domain returnIps:^(NSArray *ipsArray) {
-        [self log:@"TTNDS" message:@"domain:%@ getIpForDomain:%@",domain,ipsArray];
-        BOOL refresh;
-        TTDNSIp *ip = [self generateIpWithArray:ipsArray domain:domain isRefresh:&refresh];
-        if (handler) {
-            handler(ip);
+    if (self.currentDNSLoader) {
+        if (domain.length == 0) {
+            [self log:@"TTDNS" message:@"getIpForDomain an empty domain seted"];
+            handler?handler(nil):nil;
         }
-        if (refresh) {
-            [self saveDns];
-        }
-    }];
+        [self.currentDNSLoader getIpForDomain:domain async:^(TTDNSIp * _Nullable ip) {
+            TTDNSIp *existIp = [self.ipParseCache objectForKey:domain];
+            if (ip) {
+                if (existIp) {
+                    if (![existIp isEqual:ip]) {
+                        [existIp syncFromIp:ip];
+                        ip = existIp;
+                        [self saveDns];
+                    }
+                }else {
+                    self.ipParseCache[domain] = ip;
+                    [self saveDns];
+                }
+            }
+            handler?handler(ip):nil;
+        }];
+    }else {
+        [self log:@"TTDNS" message:@"getIpForDomain no dns loader please call [[TTDNS shared] setDNSLoader:loader]"];
+        handler?handler(nil):nil;
+    }
+   
 }
 
 /// 批量获取域名ip
@@ -247,29 +269,32 @@
         handler?handler(@[]):nil;
         return;
     }
-    [[MSDKDns sharedInstance] WGGetHostsByNamesAsync:domains returnIps:^(NSDictionary *ipsDictionary) {        
-        [self log:@"TTNDS" message:@"domains :%@ getIpForDomains:%@", domains,ipsDictionary];
-        NSMutableArray *array = [NSMutableArray array];
-        BOOL needRefresh = NO;
-        for (NSString*key in ipsDictionary.allKeys) {
-            NSArray *ipsArray = ipsDictionary[key];
-            BOOL refresh;
-            TTDNSIp *ip = [self generateIpWithArray:ipsArray domain:key isRefresh:&refresh];
-            if (!needRefresh) {
-                needRefresh = refresh;
-            }
-            if (ip) {
-                [array addObject:ip];
-            }
+    
+    [self.currentDNSLoader getIpForDomains:domains async:^(NSArray<TTDNSIp *> * _Nullable ips) {
+        __block BOOL haveRefresh = NO;
+        NSMutableArray *resultIps = (NSMutableArray *)ips;
+        if (![ips isKindOfClass:[NSMutableArray class]]) {
+            resultIps = [NSMutableArray arrayWithArray:ips];
         }
-        handler?handler(array):nil;
-        if (needRefresh) {
+        [resultIps enumerateObjectsUsingBlock:^(TTDNSIp * _Nonnull ip, NSUInteger idx, BOOL * _Nonnull stop) {
+            TTDNSIp *existIp = [self.ipParseCache objectForKey:ip.domain?:@""];
+            if (existIp) {
+                if (![existIp isEqual:ip]) {
+                    [existIp syncFromIp:ip];
+                    haveRefresh = YES;
+                }
+                resultIps[idx] = existIp;
+            }else {
+                self.ipParseCache[ip.domain?:@""] = ip;
+                haveRefresh = YES;
+            }
+        }];
+        if (haveRefresh) {
             [self saveDns];
         }
+        handler?handler(resultIps):nil;
     }];
 }
-
-
 
 
 

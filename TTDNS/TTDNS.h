@@ -6,7 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
-
+#import "TTDNSLoader.h"
 #import "TTDNSIp.h"
 /**
  * 使用 NSURL 会自动将 urlstring 替换为ip解析后的结果
@@ -30,6 +30,10 @@
 @property (nonatomic, assign) BOOL  enable;
 
 @property (nonatomic, strong) NSArray<NSString *> * _Nullable whiteList;
+
+
+/// 设置一个用来真正加载的loader
+- (void)setDNSLoader:(TTDNSLoader * _Nonnull)loader;
 
 /// 增加白名单的域名
 - (void)addWhiteListDomain:(NSString *_Nullable)domain;
