@@ -303,9 +303,9 @@
     va_list args;
     va_start(args, format);
     if (self.logdelegate && [self.logdelegate respondsToSelector:@selector(log:message:)]) {
-        [self.logdelegate log:tag message:[NSString stringWithFormat:format,args]];
+        [self.logdelegate log:tag message:[[NSString alloc] initWithFormat:format arguments:args]];
     }else {
-        NSLog(@"[%@]:[%@]",tag,[NSString stringWithFormat:format,args]);
+        NSLog(@"[%@]:[%@]",tag,[[NSString alloc] initWithFormat:format arguments:args]);
     }
     va_end(args);
 }
