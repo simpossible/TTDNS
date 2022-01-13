@@ -43,6 +43,9 @@
 /// 域名是否在解析白名单内
 - (BOOL)isDomainInWhiteList:(NSString *_Nullable)domain;
 
+/// 设置缓存的根路径 避免开发中可能存在的切换环境的测试问题
+- (void)setCacheRootDir:(NSString * _Nonnull)rootPath;
+
 
 /// 从缓存获取一个域名的解析 如果获取不到进行刷_Nullable新
 - (TTDNSIp *_Nullable)ipByDomain:(NSString *_Nullable)domain;

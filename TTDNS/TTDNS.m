@@ -31,6 +31,11 @@
 
 @property (nonatomic, strong) NSMutableDictionary * domainReqTimes;
 
+/// 是否已经加载过本地缓存了
+@property (nonatomic, assign) BOOL  isLocalCacheLoaded;
+
+@property (nonatomic, copy) NSString * rootDir;
+
 @end
 
 @implementation TTDNS
@@ -57,9 +62,26 @@
         self.ipParseCache = [NSMutableDictionary dictionary];
         self.ioQueue = dispatch_queue_create("msgDeal", DISPATCH_QUEUE_SERIAL);
         self.domainReqTimes = [NSMutableDictionary dictionary];
-        [self loadLocalCache];
+        self.cacheRootDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0];
     }
     return self;
+}
+
+- (void)setEnable:(BOOL)enable {
+    _enable = enable;
+    if (enable && !_isLocalCacheLoaded) {
+        _isLocalCacheLoaded = YES;
+        [self loadLocalCache];
+    }
+}
+
+- (void)setCacheRootDir:(NSString *)rootPath {
+    if (rootPath.length > 0) {
+        if (![_rootDir isEqualToString:rootPath]) {
+            _isLocalCacheLoaded = NO;
+            _rootDir = rootPath;
+        }
+    }
 }
 
 - (void)loadLocalCache {
