@@ -44,14 +44,15 @@ Pod::Spec.new do |spec|
   # spec.dependency "Log"
   spec.dependency "AFNetworking"  
 
-  spec.subspec "TencentLoader" do |ss|
-    ss.dependency "MSDKDns_C11"
-    ss.source_files  = "LoaderAdaptor/tencent/**/*.{h,m,swift}"
-    ss.public_header_files = "LoaderAdaptor/tencent/**/*.{h}"
-    ss.dependency "TTDNS/Base"
-  end
+  # spec.subspec "TencentLoader" do |ss|
+  #   ss.dependency "MSDKDns_C11"
+  #   ss.source_files  = "LoaderAdaptor/tencent/**/*.{h,m,swift}"
+  #   ss.public_header_files = "LoaderAdaptor/tencent/**/*.{h}"
+  #   ss.dependency "TTDNS/Base"
+  # end
 
   spec.subspec "AliLoader" do |ss|
+      ss.dependency "AlicloudHTTPDNS"
      ss.source_files  = "LoaderAdaptor/alibaba/**/*.{h,m,swift}"
      ss.public_header_files = "LoaderAdaptor/alibaba/**/*.{h}"
      ss.dependency "TTDNS/Base"
