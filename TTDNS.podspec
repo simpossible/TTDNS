@@ -9,7 +9,7 @@
 Pod::Spec.new do |spec|
 
   spec.name         = "TTDNS"
-  spec.version      = "0.0.1"
+  spec.version      = "0.0.2"
   spec.summary      = "TTDNS"
   spec.description  = <<-DESC
                         基础组件所有业务组件需要继承
@@ -54,6 +54,7 @@ Pod::Spec.new do |spec|
   # spec.subspec "AliLoader" do |ss|
   #    ss.source_files  = "LoaderAdaptor/alibaba/**/*.{h,m,swift}"
   #    ss.public_header_files = "LoaderAdaptor/alibaba/**/*.{h}"
+  #    ss.dependency "AlicloudHTTPDNS"
   # end
   # spec.test_spec 'Tests' do |test_spec|
   #   test_spec.source_files = 'Tests/*.{h,m,swift}'

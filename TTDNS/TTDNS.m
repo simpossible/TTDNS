@@ -181,47 +181,42 @@
 /// 同步 通过网络请求 获取域名解析
 - (TTDNSIp *)getIpByDomain:(NSString *)domain {
     if (domain) {
-        // 单个域名查询
-        TTDNSIp *existIp = [self.ipParseCache objectForKey:domain];
-        TTDNSIp *ip = [self.currentDNSLoader getIpByDomain:domain];
-        if (ip) {
-            if (existIp) {
-                [existIp syncFromIp:ip];
-            }else {
-                self.ipParseCache[domain] = ip;
-            }
-        }
-        return ip;
-    }
-    return nil;
-}
-
-/// 通过一个数组生成一个ip array[0] = ipv4 array[1] = ipv6
-- (TTDNSIp *)generateIpWithArray:(NSArray *)ipsArray domain:(NSString*)domain isRefresh:(BOOL *)refresh {
-    if (ipsArray && ipsArray.count > 1 && domain.length >0) {
-        NSString *ipv4 = ipsArray[0];
-        NSString *ipv6 = ipsArray[1];
-        ipv4 = [ipv4 isEqualToString:@"0"]?@"":ipv4;
-        ipv6 = [ipv6 isEqualToString:@"0"]?@"":ipv6;
-        if (ipv4.length > 0 || ipv6.length > 0) {
+        if ([[NSThread currentThread] isMainThread]) {
+            // 单个域名查询
             TTDNSIp *existIp = [self.ipParseCache objectForKey:domain];
-            *refresh = YES; // 是否更新了
-            if (existIp) {
-                if ([ipv4 isEqualToString:existIp.ipv4] && [ipv6 isEqualToString:existIp.ipv6]) {
-                    *refresh = NO;
+            TTDNSIp *ip = [self.currentDNSLoader getIpByDomain:domain];
+            if (ip) {
+                if (existIp) {
+                    if (![existIp isEqual:ip]) {
+                        [existIp syncFromIp:ip];
+                        [self saveDns];
+                    }
                 }else {
-                    [existIp updateIpv4:ipv4 andIpv6:ipv6];
+                    self.ipParseCache[domain] = ip;
                 }
-            }else {
-                existIp = [[TTDNSIp alloc] initWithIpv4:ipv4 ipv6:ipv6 domain:domain];
             }
-            [self.ipParseCache setObject:existIp forKey:domain];
-            return existIp;
+            return ip;
+        }else {
+            TTDNSIp *ip = [self.currentDNSLoader getIpByDomain:domain];
+            dispatch_sync(dispatch_get_main_queue(), ^{
+                TTDNSIp *existIp = [self.ipParseCache objectForKey:domain];
+                if (ip) {
+                    if (existIp) {
+                        if (![existIp isEqual:ip]) {
+                            [existIp syncFromIp:ip];
+                            [self saveDns];
+                        }
+                    }else {
+                        self.ipParseCache[domain] = ip;
+                    }
+                }
+            });
+            return ip;
         }
+        
     }
     return nil;
 }
-
 
 - (void)reloadIpForDomain:(NSString *)domain {
     if ([self.domainReqTimes objectForKey:domain]) {
