@@ -25,7 +25,8 @@ Pod::Spec.new do |spec|
   spec.source       = { :git => "git@github.com:simpossible/TTDNS.git", :tag => "#{spec.version}" }
   
   spec.static_framework = true
-  spec.source_files  = "TTDNS", "TTDNS/**/*.{h,m,swift}"
+  spec.source_files  = "TTDNS/**/*.{h,m,swift}"
+  spec.public_header_files = "TTDNS/**/*.{h}"
   
   # spec.resources = "TTDNS/**/*.{xib,storyboard}"
 
@@ -35,10 +36,21 @@ Pod::Spec.new do |spec|
   # spec.pod_target_xcconfig = { 'VALID_ARCHS' => 'x86_64 armv7 arm64' }
 
   
-  spec.dependency "MSDKDns_C11"
+  
   # spec.dependency "Log"
   spec.dependency "AFNetworking"
 
+  spec.subspec "TencentLoader" do |tencent|
+    tencent.dependency "MSDKDns_C11"
+    tencent.source_files  = "LoaderAdaptor/tencent/**/*.{h,m,swift}"
+    tencent.public_header_files = "LoaderAdaptor/tencent/**/*.{h}"
+  end
+
+  spec.subspec "AliLoader" do |ali|
+      ali.dependency "AlicloudHTTPDNS"
+      ali.source_files  = "LoaderAdaptor/alibaba/**/*.{h,m,swift}"
+      ali.public_header_files = "LoaderAdaptor/alibaba/**/*.{h}"
+  end
   # spec.test_spec 'Tests' do |test_spec|
   #   test_spec.source_files = 'Tests/*.{h,m,swift}'
   #   test_spec.dependency  'XcodeCoverage'
