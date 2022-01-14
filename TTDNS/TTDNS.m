@@ -65,7 +65,7 @@
         self.ipParseCache = [NSMutableDictionary dictionary];
         self.ioQueue = dispatch_queue_create("msgDeal", DISPATCH_QUEUE_SERIAL);
         self.domainReqTimes = [NSMutableDictionary dictionary];
-        self.cacheRootDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+        self.rootDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0];
     }
     return self;
 }
@@ -97,7 +97,7 @@
 
 - (void)loadLocalCache {
     
-    NSString *path = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"tt_dns_cache"];
+    NSString *path = [self.rootDir stringByAppendingPathComponent:@"tt_dns_cache"];
     if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
         dispatch_async(self.ioQueue, ^{
             NSData *data = [NSData dataWithContentsOfFile:path];
@@ -123,7 +123,7 @@
 - (void)saveDns {
     NSDictionary *dic = [self.ipParseCache copy];
     dispatch_async(self.ioQueue, ^{
-        NSString *path = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"tt_dns_cache"];
+        NSString *path = [self.rootDir stringByAppendingPathComponent:@"tt_dns_cache"];
         NSMutableData *data = [[NSMutableData alloc] init];
         NSKeyedArchiver *archiver = [[NSKeyedArchiver alloc] initForWritingWithMutableData:data];
         [archiver encodeObject:dic forKey:@"dns"]; // archivingDate的encodeWithCoder
