@@ -51,11 +51,11 @@ Pod::Spec.new do |spec|
     ss.dependency "TTDNS/Base"
   end
 
-  # spec.subspec "AliLoader" do |ss|
-  #    ss.source_files  = "LoaderAdaptor/alibaba/**/*.{h,m,swift}"
-  #    ss.public_header_files = "LoaderAdaptor/alibaba/**/*.{h}"
-  #    ss.dependency "AlicloudHTTPDNS"
-  # end
+  spec.subspec "AliLoader" do |ss|
+     ss.source_files  = "LoaderAdaptor/alibaba/**/*.{h,m,swift}"
+     ss.public_header_files = "LoaderAdaptor/alibaba/**/*.{h}"
+     ss.dependency "AlicloudHTTPDNS"
+  end
   # spec.test_spec 'Tests' do |test_spec|
   #   test_spec.source_files = 'Tests/*.{h,m,swift}'
   #   test_spec.dependency  'XcodeCoverage'
