@@ -55,8 +55,7 @@ config.timeout = 5000;
 ### 如何使用阿里云接入
 使用cocoapods导入
 ```
-  pod "TTDNS"
-  pod "TTDNS",:subspecs=>["AliLoader"]
+  pod "TTDNS",:subspecs=>["AliLoader"],:git => "git@github.com:simpossible/TTDNS.git",:branch=>"feature/feature_ali"
 ```
 如何使用
 ```
