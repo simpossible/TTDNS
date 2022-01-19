@@ -24,7 +24,13 @@
 /// 异步获取域名
 - (void)getIpForDomain:(NSString * _Nullable)domain async:(void (^_Nullable)(TTDNSIp * _Nullable ip))handler {
     [[MSDKDns sharedInstance] WGGetHostByNameAsync:domain returnIps:^(NSArray *ipsArray) {
-        handler?handler([self generateIpWithArray:ipsArray domain:domain]):nil;
+        if ([[NSThread currentThread] isMainThread]) {
+            handler?handler([self generateIpWithArray:ipsArray domain:domain]):nil;
+        }else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                handler?handler([self generateIpWithArray:ipsArray domain:domain]):nil;
+            });
+        }
     }];
 }
 
@@ -43,7 +49,13 @@
                 [array addObject:ip];
             }
         }
-        handler?handler(array):nil;
+        if ([[NSThread currentThread] isMainThread]) {
+            handler?handler(array):nil;
+        }else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                handler?handler(array):nil;
+            });
+        }
     }];
 }
 
