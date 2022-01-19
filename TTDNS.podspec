@@ -9,7 +9,7 @@
 Pod::Spec.new do |spec|
 
   spec.name         = "TTDNS"
-  spec.version      = "0.0.3"
+  spec.version      = "0.0.4"
   spec.summary      = "TTDNS"
   spec.description  = <<-DESC
                         基础组件所有业务组件需要继承
